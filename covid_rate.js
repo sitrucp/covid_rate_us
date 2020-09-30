@@ -15,21 +15,30 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
         };
 }).then(function getData(rawData) {
     
-    // filter rawData
-    var cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 8);
+    // filter rawData past 7 days
+    var maxAvailDate = d3.max(rawData.map(d=>d.date));
+    var cutOffDate = new Date();
+    cutOffDate.setDate(maxAvailDate.getDate() - 7);
     filteredData = rawData.filter(function(d) {
-        return d.date > cutoffDate;
+        return d.date > cutOffDate;
+    })
+
+    // filter rawData past 14 to 7 days (from maxAvailDate - 14 to maxAvailDate - 7)
+    var cutOffDate14days = new Date();
+    cutOffDate14days.setDate(maxAvailDate.getDate() - 14);
+    filteredDataPast = rawData.filter(function(d) {
+        return d.date > cutOffDate14days &&  d.date < cutOffDate;
     })
 
     // get min and max date to write to index
     minDate = d3.min(filteredData.map(d=>d.date));
     maxDate = d3.max(filteredData.map(d=>d.date));
+
     document.getElementById("min_date").innerHTML += minDate.toISOString().split("T")[0];
     document.getElementById("max_date").innerHTML += maxDate.toISOString().split("T")[0];
 
     // group filteredData by location and mean values
-    var data = d3.nest()
+    var dataCurr = d3.nest()
     .key(function(d) { return d.location; })
     .rollup(function(v) { 
         return {
@@ -40,18 +49,49 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
     .map(function(group) {
         return {
             location: group.key,
-            avg_new_cases: group.value.avg_new_cases
+            avg_new_cases: Math.round(group.value.avg_new_cases)
         }
     });
+
+    // group filteredDataPast by location and mean values
+    var dataPast = d3.nest()
+    .key(function(d) { return d.location; })
+    .rollup(function(v) { 
+        return {
+            avg_new_cases_past: d3.mean(v, function(d) { return d.new_cases; })
+        };
+    })
+    .entries(filteredDataPast)
+    .map(function(group) {
+        return {
+            location: group.key,
+            avg_new_cases_past: Math.round(group.value.avg_new_cases_past)
+        }
+    });
+
+    // left join function used to join data & dataPast
+    function equijoinWithDefault(xs, ys, primary, foreign, sel, def) {
+        const iy = ys.reduce((iy, row) => iy.set(row[foreign], row), new Map);
+        return xs.map(row => typeof iy.get(row[primary]) !== 'undefined' ? sel(row, iy.get(row[primary])): sel(row, def));
+    };
+
+    // left join lookup data & dataPast on date
+    const data = equijoinWithDefault(
+        dataCurr, dataPast, 
+        "location", "location", 
+        ({location, avg_new_cases}, {avg_new_cases_past}, ) => 
+        ({location, avg_new_cases, avg_new_cases_past}), 
+        {avg_new_cases_past:null});
 
     getData();
 
     function getData() {
         for(var i = 0; i < data.length; i++) {
             var metric = parseInt(data[i].avg_new_cases).toLocaleString("en");
+			var metricPast = parseInt(data[i].avg_new_cases_past).toLocaleString("en");
             var cycleDuration = cycleCalc(data[i].avg_new_cases);
             var location = data[i].location;
-            addChart(location, metric, cycleDuration);
+            addChart(location, metric, metricPast, cycleDuration);
         }
     }
 
@@ -67,7 +107,7 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
         return cycleDuration
     }
 
-    function addChart(location, metric, cycleDuration) {
+    function addChart(location, metric, metricPast, cycleDuration) {
         var width = 700;
         var height = 20;
         var yText = height / 1.3;
@@ -102,7 +142,17 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
 
         // create svg shape
         var svgShape = svgContainer.append("circle")
-        .style("fill", "#FFF")
+        .style("stroke", "FFF")
+       	.style("stroke-width", 2)
+        .style("fill", function(d) { 
+            if(metric < metricPast) {
+                return "#6FC628";
+            } else if (metric > metricPast) {
+                return "#C62858";
+            } else {
+                return "#FFF";
+            }
+        })
         .attr("cy", yShape)
         .attr("r", 5);
 
@@ -134,7 +184,7 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
         var x = document.getElementById("btn_sort");
         if (x.value === "case") {
             x.innerHTML = "Sort by state";
-            x.value = "state";
+            x.value = "location";
             data.sort(function(a, b){return b.avg_new_cases - a.avg_new_cases});
         } else {
             x.innerHTML = "Sort by cases";
