@@ -17,15 +17,15 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
     
     // filter rawData past 7 days
     var maxAvailDate = d3.max(rawData.map(d=>d.date));
-    var cutOffDate = new Date();
-    cutOffDate.setDate(maxAvailDate.getDate() - 7);
+    var cutOffDate = new Date(maxAvailDate);
+    cutOffDate.setDate(cutOffDate.getDate() - 7);
     filteredData = rawData.filter(function(d) {
         return d.date > cutOffDate;
     })
 
     // filter rawData past 14 to 7 days (from maxAvailDate - 14 to maxAvailDate - 7)
-    var cutOffDate14days = new Date();
-    cutOffDate14days.setDate(maxAvailDate.getDate() - 14);
+    var cutOffDate14days = new Date(maxAvailDate);
+    cutOffDate14days.setDate(cutOffDate14days.getDate() - 14);
     filteredDataPast = rawData.filter(function(d) {
         return d.date > cutOffDate14days &&  d.date < cutOffDate;
     })
