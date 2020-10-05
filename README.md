@@ -1,4 +1,4 @@
-**7 day average new COVID-19 cases by US State - rate visualization**
+# 7 day average new COVID-19 cases by US State - rate visualization
 
 This is a visualization that shows relative rate of increase in new COVID-19 cases by US State over the past 7 days.
 
