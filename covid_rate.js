@@ -1,10 +1,17 @@
-
-
 var parseTime = d3.timeParse("%Y-%m-%d");
 
 /*
-d3.json("https://data.cdc.gov/resource/9mfq-cb36.json")
-.then(function getData(rawData) {
+d3.json("https://data.cdc.gov/resource/9mfq-cb36.json").then(function (json) {
+    return json.map(function (d) {
+        return {
+            location: d.state,
+            date: new Date(d.submission_date),
+            new_cases: d.new_case
+        };
+    });
+}).then(function getData(rawData) {
+
+    //console.log(rawData[0]);
 */
 
 d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", function(d) {
@@ -14,7 +21,7 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
         new_cases: d.new_case
         };
 }).then(function getData(rawData) {
-    
+        
     // filter rawData past 7 days
     var maxAvailDate = d3.max(rawData.map(d=>d.date));
     var cutOffDate = new Date(maxAvailDate);
@@ -88,7 +95,7 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
     function getData() {
         for(var i = 0; i < data.length; i++) {
             var metric = parseInt(data[i].avg_new_cases).toLocaleString("en");
-			var metricPast = parseInt(data[i].avg_new_cases_past).toLocaleString("en");
+            var metricPast = parseInt(data[i].avg_new_cases_past).toLocaleString("en");
             var cycleDuration = cycleCalc(data[i].avg_new_cases);
             var location = data[i].location;
             addChart(location, metric, metricPast, cycleDuration);
@@ -143,7 +150,7 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
         // create svg shape
         var svgShape = svgContainer.append("circle")
         .style("stroke", "FFF")
-       	.style("stroke-width", 2)
+           .style("stroke-width", 2)
         .style("fill", function(d) { 
             if(metric < metricPast) {
                 return "#6FC628";
