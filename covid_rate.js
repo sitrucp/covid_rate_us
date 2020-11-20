@@ -149,7 +149,7 @@ d3.csv("United_States_COVID-19_Cases_and_Deaths_by_State_over_Time.csv", functio
 
         // create svg shape
         var svgShape = svgContainer.append("circle")
-        .style("stroke", "FFF")
+        .style("stroke", "#FFF")
            .style("stroke-width", 2)
         .style("fill", function(d) { 
             if(metric < metricPast) {
